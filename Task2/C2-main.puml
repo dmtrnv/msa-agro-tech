@@ -1,0 +1,97 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(zootechnician, "Зоотехник", "Анализ текущего состояния скота, будущего объема мясной продукции")
+Person(logistician, "Логист", "Планирование закупок")
+Person(operator, "Оператор", "Получение уведомлений об инцидентах. Настройка расписания кормушек и поилок. Актуализация информации об остатках запасов еды")
+
+System_Boundary(platform, "Платформа мониторинга") {
+    Container(platformBackend, "Backend API", "C#", "API для приложения web-портал. Аналитика текущего состояния скота, запасов еды на каждой ферме")
+    Container(platformFrontend, "Web-портал", "React", "UI для пользователя. Аналитика текущего состояния скота, запасов еды на каждой ферме")
+    Container(platformDataAnalytics, "Модуль сбора и анализа данных", "Python", "Сбор, агрегация данных. Прогнозирование расхода еды. Анализ состояния систем фильтрации воды")
+    Container(platformOutbox, "Модуль отправки событий из outbox-таблиц", "C#", "Читает outbox-таблицы и отправляет сообщения в брокер")
+    Container(platformMetrics, "Модуль сбора метрик", "C#", "Собирает, агрегирует метрики и предоставляет их заинтересованным сторонам")
+
+    ContainerQueue(platformKafka, "Брокер сообщений", "Apache Kafka", "Шина данных")
+    
+    ContainerDb(platformDb, "База данных", "PostgresSQL", "Структурированные данные")
+}
+
+System_Boundary(local, "Локальная система мониторинга") {
+    Container_Boundary(localFeeders, "Контроллеры кормушек") {
+        Container(localFeedersTypeA, "Контроллеры кормушек типа А", "C++", "Управление подачей еды в кормушки")
+        Container(localFeedersTypeB, "Контроллеры кормушек типа Б", "C++", "Управление подачей еды в кормушки")
+    }
+    Container_Boundary(localDrinkingBowls, "Контроллеры поилок") {
+        Container(localDrinkingBowlsTypeA, "Контроллеры поилок типа А", "C++", "Управление подачей воды в поилки")
+        Container(localDrinkingBowlsTypeB, "Контроллеры поилок типа Б", "C++", "Управление подачей воды в поилки")
+    }
+    Container(localWaterSensors, "Датчики анализа воды", "Python", "Анализ состава воды для обнаружения проблем с фильтрацией")
+    Container(localFeedersAdapter, "Адаптер к контроллерам кормушек", "C#", "Управление контроллерами кормушек различных типов")
+    Container(localDrinkingBowlsAdapter, "Адаптер к контроллерам поилок", "C#", "Управление контрелларми поилок различных типов")
+    Container(localFeedersAndDrinkingBowlsControl, "Модуль управления контроллерами поилок и кормушек", "C#", "Передача управляющих команд для подачей еды/воды в кормушки/поилки по расписанию")
+    Container(localWaterSensorsDataProcessor, "Модуль обработки данных с датчиков", "C#", "Анализ и агрегация данных с датчиков анализа воды для отслеживания систем фильтрации воды")
+    Container(localOutbox, "Модуль отправки событий из outbox-таблиц", "C#", "Читает outbox-таблицы и отправляет сообщения в брокер")
+    Container_Boundary(localCameras, "Камеры") {
+        Container(localCamerasTypeA, "Камеры типа А", "IP Camera", "Фиксирует видео")
+        Container(localCamerasTypeB, "Камеры типа Б", "IP Camera", "Фиксирует видео")
+    }
+    Container_Boundary(localCameraAdapters, "Адаптеры к камерам") {
+        Container(localCameraTypeAAdapters, "Адаптер к камерам типа А", "C#", "Преобразует видеопоток камеры типа А в стандартный формат")
+        Container(localCameraTypeBAdapters, "Адаптер к камерам типа Б", "C#", "Преобразует видеопоток камеры типа Б в стандартный формат")
+    }
+    Container(localDetectedSignalsAnalytics, "Модуль анализа сигналов от системы видеоаналитики", "Go", "Объединяет видеопотоки с камер и передает их систему видеоаналитики. Обрабатывает сигналы от системы видеоаналитики")
+    Container(localBackend, "Backend API", "C#", "API для приложения web-портал. Информирование об инцидентах. Настройка расписания кормушек и поилок. Актуализация информации об остатках запасов еды")
+    Container(localFrontend, "Web-портал", "React", "UI для пользователя. Информирование об инцидентах. Настройка расписания кормушек и поилок. Актуализация информации об остатках запасов еды")
+    
+    ContainerDb(localDb, "База данных", "PostgresSQL", "Структурированные данные")
+}
+
+System_Ext(agrotech, "АгроПром Х - Цифровая платформа", "Основная цифровая платформа компании")
+System_Ext(platformPrometheus, "Платформенный Prometheus", "Система мониторинга и сбора метрик")
+System_Ext(platformKeycloak, "Платформенный Keycloak", "Система управления идентификацией и доступом")
+System_Ext(localKeycloak, "Локальный Keycloak", "Локальная система управления идентификацией и доступом на ферме")
+System_Ext(localVideoAnalytics, "Локальная система видеоаналитики", "Система видеоаналитики на основе нейронных сетей, предоставленная партнерами")
+
+Rel(platformOutbox, agrotech, "Передает данные", "Kafka Protocol")
+Rel(platformOutbox, platformDb, "Получает данные", "SQL")
+Rel(platformMetrics, platformPrometheus, "Собирает метрики", "PromQL")
+Rel(platformMetrics, platformKafka, "Публикует агрегированные метрики", "Kafka Protocol")
+Rel(platformPrometheus, platformBackend, "Собирает метрики", "HTTP", "GET /metrics")
+Rel(platformDataAnalytics, platformKafka, "Собирает данные", "Kafka Protocol")
+Rel(platformDataAnalytics, platformDb, "Сохраняет данные", "SQL")
+Rel(platformBackend, platformDb, "Получает данные", "SQL")
+Rel(platformFrontend, platformBackend, "Использует API", "GraphQL")
+Rel(platformFrontend, platformKeycloak, "Аутентифицирует пользователя", "OAuth 2.0 / OpenID Connect")
+Rel(zootechnician, platformFrontend, "Анализирует текущее состояние скота, будущий объем мясной продукции")
+Rel(logistician, platformFrontend, "Планирует закупки")
+
+Rel_U(localOutbox, platformKafka, "Синхронизация данных", "Kafka Protocol")
+Rel(localOutbox, localDb, "Получает данные", "SQL")
+Rel(localFeedersAndDrinkingBowlsControl, localDb, "Получает расписание", "SQL")
+Rel(localFeedersAndDrinkingBowlsControl, localFeedersAdapter, "Передает управляющие команды к кормушкам", "gRPC")
+Rel(localFeedersAndDrinkingBowlsControl, localDrinkingBowlsAdapter, "Передает управляющие команды к поилкам", "gRPC")
+Rel(localFeedersAdapter, localFeedersTypeA, "Управляет кормушками", "TCP/IP")
+Rel(localFeedersAdapter, localFeedersTypeB, "Управляет кормушками", "TCP/IP")
+Rel(localDrinkingBowlsAdapter, localDrinkingBowlsTypeA, "Управляет поилками", "TCP/IP")
+Rel(localDrinkingBowlsAdapter, localDrinkingBowlsTypeB, "Управляет поилками", "TCP/IP")
+Rel(localWaterSensors, localWaterSensorsDataProcessor, "Передает данные", "LoRaWAN")
+Rel(localWaterSensorsDataProcessor, localDb, "Сохраняет данные", "SQL")
+Rel(localCamerasTypeA, localCameraTypeAAdapters, "Передает видеопоток", "ONVIF/RTSP", "H.264")
+Rel(localCamerasTypeB, localCameraTypeBAdapters, "Передает видеопоток", "ONVIF/RTSP", "MJPEG")
+Rel(localCameraTypeAAdapters, localDetectedSignalsAnalytics, "Передает видеопоток", "gRPC", "H.265")
+Rel(localCameraTypeBAdapters, localDetectedSignalsAnalytics, "Передает видеопоток", "gRPC", "H.265")
+Rel(localDetectedSignalsAnalytics, localVideoAnalytics, "Передает видеопоток", "gRPC", "H.265")
+Rel(localVideoAnalytics, localDetectedSignalsAnalytics, "Передает обнаруженные действия", "gRPC")
+Rel(localDetectedSignalsAnalytics, localDb, "Сохраняет обнаруженные действия", "SQL")
+Rel(localDetectedSignalsAnalytics, localBackend, "Оповещает об обнаруженных действиях", "gRPC")
+BiRel(localBackend, localDb, "Сохраняет и получает данные", "SQL")
+Rel(localBackend, localFrontend, "Оповещает об инцидентах", "WebSocket")
+Rel(localFrontend, localBackend, "Использует API", "GraphQL")
+Rel(localFrontend, localKeycloak, "Аутентифицирует пользователя", "OAuth 2.0 / OpenID Connect")
+BiRel(operator, localFrontend, "Получает уведомления об инцидентах. Настраивает расписание кормушек и поилок. Актуализирует информацию об остатках запасов еды")
+
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+
+title Диаграмма кода адаптера к поилкам определенного типа
+
+record Command {
+    + DrinkingBowlId: Guid 
+    + WaterSupplyVolumeMl: decimal 
+}
+
+record Response {
+    + Code: int
+    + Message: string?
+}
+
+class Connector {
+    + SendCommand(drinkingBowlId: Guid, command: byte[]): Response
+}
+
+class TypeAAdapter {
+    - Connector: Connector
+    + SendCommand(command: Command): void
+}
+
+Connector ..> Response
+TypeAAdapter o-- Connector
+TypeAAdapter ..> Command
+TypeAAdapter ..> Response
+
+@enduml

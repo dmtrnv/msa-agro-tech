@@ -1,0 +1,22 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+System_Boundary(local, "Локальная система мониторинга") {
+    Container(localFeedersAndDrinkingBowlsControl, "Модуль управления контроллерами поилок и кормушек", "C#", "Передача управляющих команд для подачей еды/воды в кормушки/поилки по расписанию")
+    Container_Boundary(localDrinkingBowlsAdapter, "Адаптер к контроллерам поилок", "", "", "Технологии: C#, .NET 10, ASP.NET Core") {
+        Component(commandService, "Сервис приема и распределения команд", "", "Принимает запросы на активацию поилок. Преобразует команды в нужный формат для каждого типа. Управляет контроллерами поилок различных типов")
+    }
+    Container_Boundary(localDrinkingBowls, "Контроллеры поилок") {
+        Container(localDrinkingBowlsTypeA, "Контроллеры поилок типа А", "C++", "Управление подачей воды в поилки")
+        Container(localDrinkingBowlsTypeB, "Контроллеры поилок типа Б", "C++", "Управление подачей воды в поилки")
+    }
+}
+
+Rel(localFeedersAndDrinkingBowlsControl, commandService, "Отправляет команды на активацию кормушек", "gRPC")
+Rel(commandService, localDrinkingBowlsTypeA, "Передает команду", "TCP/IP")
+Rel(commandService, localDrinkingBowlsTypeB, "Передает команду", "TCP/IP")
+
+@enduml

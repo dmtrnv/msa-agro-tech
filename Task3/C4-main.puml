@@ -1,0 +1,42 @@
+@startuml
+
+title Диаграмма кода адаптера к поилкам определенного типа
+
+record Command {
+    + DrinkingBowlId: Guid 
+    + WaterSupplyVolumeMl: decimal 
+}
+
+record Response {
+    + Code: int
+    + Message: string?
+}
+
+interface IConnector {
+    + SendCommand(drinkingBowlId: Guid, command: byte[]): Response
+}
+
+interface IRetryPolicy {
+    + ShouldRetry(attempt: int, error: Exception): bool
+    + GetDelay(attempt: int): Timestamp
+}
+
+interface IAdapter {
+    + SendCommand(command: Command): void
+}
+
+class TypeAAdapter {
+    - Connector: IConnector
+    - RetryPolicy: IRetryPolicy
+    - TransformCommand(command: Command): byte[]
+    + SendCommand(command: Command): void
+}
+
+IConnector ..> Response
+TypeAAdapter --|> IAdapter
+TypeAAdapter o-- IConnector
+TypeAAdapter o-- IRetryPolicy
+TypeAAdapter ..> Command
+TypeAAdapter ..> Response
+
+@enduml

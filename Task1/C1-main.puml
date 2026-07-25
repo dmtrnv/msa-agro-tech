@@ -1,0 +1,31 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(zootechnician, "Зоотехник", "Анализ текущего состояния скота, будущего объема мясной продукции")
+Person(logistician, "Логист", "Планирование закупок")
+Person(operator, "Оператор", "Получение уведомлений об инцидентах. Настройка расписания кормушек и поилок. Актуализация информации об остатках запасов еды")
+
+System(platform, "Платформа мониторинга", "Центральная система мониторинга")
+System(local, "Локальная система мониторинга", "Локальная система мониторинга на ферме")
+
+System_Ext(agrotech, "АгроПром Х - Цифровая платформа", "Основная цифровая платформа компании")
+System_Ext(platformPrometheus, "Плафторменный Prometheus", "Система мониторинга и сбора метрик")
+System_Ext(platformKeycloak, "Платформенный Keycloak", "Система управления идентификацией и доступом")
+System_Ext(localKeycloak, "Локальный Keycloak", "Локальная система управления идентификацией и доступом на ферме")
+System_Ext(localVideoAnalytics, "Локальная система видеоаналитики", "Система видеоаналитики на основе нейронных сетей, предоставленная партнерами")
+
+Rel(zootechnician, platform, "Использует")
+Rel(logistician, platform, "Использует")
+Rel(operator, local, "Использует")
+Rel_L(platform, agrotech, "Передает данные")
+Rel(local, localVideoAnalytics, "Передает видеопоток с камер")
+Rel(localVideoAnalytics, local, "Передает события, обнаруженные в видеопотоке")
+Rel_U(platformPrometheus, platform, "Собирает метрики")
+Rel(platform, platformKeycloak, "Использует для идентификации, аутентификации, авторизации пользователей")
+Rel(local, localKeycloak, "Использует для идентификации, аутентификации, авторизации пользователей")
+Rel_L(local, platform, "Передает данные о происходящем на ферме")
+
+@enduml

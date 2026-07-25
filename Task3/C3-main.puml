@@ -1,0 +1,31 @@
+@startuml
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+System_Boundary(local, "Локальная система мониторинга") {
+    Container(feedersAndDrinkingBowlsControl, "Модуль управления контроллерами поилок и кормушек", "C#", "Передача управляющих команд для подачей еды/воды в кормушки/поилки по расписанию")
+    Container_Boundary(drinkingBowlsAdapter, "Адаптер к контроллерам поилок", "", "", "Технологии: C#, .NET 10, ASP.NET Core") {
+        Component(commandService, "Сервис приема и распределения команд", "", "Принимает запросы на активацию и отправляет их в адаптеры поилок")
+        Component(diContainer, "DI контейнер", "", "Автоматизирует создание объектов и контроль их зависимостей")
+        Component(drinkingBowlsTypeAAdapter, "Адаптер к поилкам типа А", "", "Преобразует команду к нужному формату. Управляет контроллерами поилок типа А")
+        Component(drinkingBowlsTypeBAdapter, "Адаптер к поилкам типа Б", "", "Преобразует команду к нужному формату. Управляет контроллерами поилок типа Б")
+        Component(drinkingBowlsConnector, "Менеджер подключений к поилкам", "", "Подключается к поилкам и передает им команды")
+    }
+    Container_Boundary(localDrinkingBowls, "Контроллеры поилок") {
+        Container(localDrinkingBowlsTypeA, "Контроллеры поилок типа А", "C++", "Управление подачей воды в поилки")
+        Container(localDrinkingBowlsTypeB, "Контроллеры поилок типа Б", "C++", "Управление подачей воды в поилки")
+    }
+}
+
+Rel(feedersAndDrinkingBowlsControl, commandService, "Отправляет команды на активацию кормушек", "gRPC")
+Rel_L(commandService, diContainer, "Запрашивает конкретные реализации адаптеров для передачи команд контроллерам поилок")
+Rel(commandService, drinkingBowlsTypeAAdapter, "Передает команду")
+Rel(commandService, drinkingBowlsTypeBAdapter, "Передает команду")
+Rel(drinkingBowlsTypeAAdapter, drinkingBowlsConnector, "Передает команду")
+Rel(drinkingBowlsTypeBAdapter, drinkingBowlsConnector, "Передает команду")
+Rel(drinkingBowlsConnector, localDrinkingBowlsTypeA, "Передает команду", "TCP/IP")
+Rel(drinkingBowlsConnector, localDrinkingBowlsTypeB, "Передает команду", "TCP/IP")
+
+@enduml
